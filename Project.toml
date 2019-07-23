@@ -1,0 +1,10 @@
+name = "KnowledgeDiffusionSimulations"
+uuid = "a873acd4-4182-59b7-ab14-46ecc29bc2c2"
+authors = ["Jesse Perla <jesseperla@gmail.com>"]
+version = "0.1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

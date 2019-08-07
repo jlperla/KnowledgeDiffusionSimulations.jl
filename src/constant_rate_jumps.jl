@@ -25,6 +25,6 @@ rate(u,p,t) = 0.2
 affect_index!(integrator, index) = (integrator.u[index] = max(integrator.u[index], integrator.u[rand(1:integrator.p.N)]) )
 jumps = [ConstantRateJump(rate,AffectIndex(affect_index!, i)) for i in 1:p.N]
 jump_prob = JumpProblem(prob,DirectFW(),JumpSet((), jumps, nothing, nothing))
-sol = solve($jump_prob, SRIW1());
+sol = solve(jump_prob, SRIW1());
 sol_hcat = hcat(sol.u...)
 plot(sol.t, transpose(sol_hcat[1:2, :]), label = "Single Jump", legend = false)

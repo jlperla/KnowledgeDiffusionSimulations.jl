@@ -9,9 +9,8 @@ end
 
 ####
 function affect!(integrator)
-  N = length(integrator.u)
-  n = rand(1:N)
-  n2 = rand(1:N)
+  n = rand(1:integrator.p.N)
+  n2 = rand(1:integrator.p.N)
   integrator.u[n] = max(integrator.u[n], integrator.u[n2])
 end
 

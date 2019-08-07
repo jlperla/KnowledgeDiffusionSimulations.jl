@@ -8,13 +8,6 @@ function (p::AffectIndex)(integrator)
 end
 
 ####
-struct RateIndex{F1, F2}
-  rate_index::F1
-  index::F2
-end
-function (q::RateIndex)(u, p, t)
-    return q.rate_index(u, p, t, q.index)
-end
 function μ_SDE(du,u,p,t)
   du .= p.μ
 end
@@ -24,18 +17,18 @@ function σ_SDE(du,u,p,t)
 end
 
 function affect!(integrator)
-    κ = 0.5
-    N = length(integrator.u)
+    #draw
     sort_u = sort(integrator.u)
-    F = range(0.0, 1, length = N)
-    draw_quantile = rand(2)  # draw quantile on (0,1)
-    u_n = sort_u[findlast(q -> q <= draw_quantile[1], F.^κ)]
-    u_n_2 = sort_u[findlast(q -> q <= draw_quantile[2], F.^κ)]
-    integrator.u[integrator.u .== u_n] =
-                max(integrator.u[integrator.u .== u_n], integrator.u[integrator.u .== u_n_2])
+    F = range(0.0, 1, length = integrator.p.N)
+    draw_quantile = rand()  # draw quantile on (0,1)
+    u_n_2 = sort_u[findlast(q -> q <= draw_quantile, F.^integrator.p.κ)]
+    n_2 = findlast(q -> q == u_n_2 , integrator.u)
+    #firm facing a jump
+    n = rand(1:integrator.p.N)
+    integrator.u[n] =max(integrator.u[n], integrator.u[n_2])
 end
 
-p = (μ = 0.01, σ = 0.1, N = 5) # if all constant
+p = (μ = 0.01, σ = 0.1, N = 3, κ = 0.5) # if all constant
 T = 10.0  # maximum time length
 x_iv = rand(p.N)  # just draws from the inital condition
 

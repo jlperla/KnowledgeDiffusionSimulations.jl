@@ -3,6 +3,12 @@ uuid = "a873acd4-4182-59b7-ab14-46ecc29bc2c2"
 authors = ["Jesse Perla <jesseperla@gmail.com>"]
 version = "0.1.0"
 
+[deps]
+DiffEqJump = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
+
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 

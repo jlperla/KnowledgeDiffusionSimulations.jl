@@ -22,10 +22,9 @@ function affect!(integrator)
     F = range(0.0, 1, length = integrator.p.N)
     draw_quantile = rand()  # draw quantile on (0,1)
     u_n_2 = sort_u[findlast(q -> q <= draw_quantile, F.^integrator.p.κ)]
-    n_2 = findlast(q -> q == u_n_2 , integrator.u)
     #firm facing a jump
     n = rand(1:integrator.p.N)
-    integrator.u[n] =max(integrator.u[n], integrator.u[n_2])
+    integrator.u[n] =max(integrator.u[n], u_n_2)
 end
 
 p = (μ = 0.01, σ = 0.1, N = 3, κ = 0.5) # if all constant

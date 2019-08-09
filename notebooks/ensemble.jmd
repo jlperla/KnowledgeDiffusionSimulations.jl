@@ -92,7 +92,7 @@ plot(p1, p2, p3, p4)
 Run several ensembles, and track the means of the _n_th particle's position over time.
 
 ```julia
-p = params(N = 4, trajectories = 10)
+p = params(N = 3, trajectories = 10)
 ensemble_prob = EnsembleProblem(generate_jump_prob(p)) # no callback structure, since we care about positions and not moments
 sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, save_everystep = false)
 summ = EnsembleSummary(sim) # aggregates particle positions across simulations
@@ -102,7 +102,7 @@ plot(summ, error_style = :bars)
 ### Single Simulation
 
 ```julia
-p_single = params(N = 4)
+p_single = params(N = 3)
 jump_prob = generate_jump_prob(p_single)
 sol = solve(jump_prob, p.jump_algorithm, saveat = p.t)
 plot(sol, legend = false, title = "Particle Trajectories")

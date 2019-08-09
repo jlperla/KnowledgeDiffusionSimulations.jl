@@ -26,7 +26,7 @@ params = @with_kw (
     σ = 0.1, # drift
     N = 10, # num particles
     β = 0.2, # rate parameter
-    t = 0.:0.01:500., # time steps to save
+    t = 0.:0.01:1000., # time steps to save
     moments = Array{Array{Float64, 1}, 1}(), # container for moments
     α = 2.0, # shape parameter for the initial condition distribution
     iv_dist = Exponential(1/α), # updates based on supplied α
@@ -56,6 +56,8 @@ end
 p = params();
 ```
 
+### First Run
+
 ```julia
 jump_prob, cb = generate_jump_prob(p)
 sol = solve(jump_prob, p.jump_algorithm, saveat = p.t, callback = cb)
@@ -68,5 +70,24 @@ For the histogram, let's eliminate "outliers."
 ```julia
 gs_clamped = filter(x -> x < 1 && x > -1, gs)
 println("# of observations dropped: $(length(gs) - length(gs_clamped))") # distributions dropped
-histogram(gs_clamped)
+histogram(gs_clamped, legend = false)
+```
+
+### Second Run, New Initial Condition Draw
+
+```julia
+p = params()
+jump_prob, cb = generate_jump_prob(p)
+sol = solve(jump_prob, p.jump_algorithm, saveat = p.t, callback = cb)
+gs = [timepoint[4] for timepoint in p.moments]
+summarystats(gs)
+```
+
+```julia
+gs_clamped = filter(x -> x < 1 && x > -1, gs)
+println("# of observations dropped: $(length(gs) - length(gs_clamped))") # distributions dropped
+histogram(gs_clamped, legend = false)
+```
+
+```julia
 ```

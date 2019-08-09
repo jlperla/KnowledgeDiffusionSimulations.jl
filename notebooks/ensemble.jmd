@@ -38,8 +38,6 @@ params = @with_kw (
     volatility = volatility, 
     affect! = affect!, # jump process 
     rate = rate)
-    
-p = params();
 ```
 
 ### Generator Functions for Problem Objects
@@ -68,6 +66,8 @@ function generate_ensemble_prob(p)
     ensemble_prob = EnsembleProblem(prob, output_func = write_moments)    
     return ensemble_prob, cb
 end
+    
+p = params();
 ```
 
 ### Solve Ensemble
@@ -92,4 +92,7 @@ p_single = params(N = 4)
 jump_prob = generate_jump_prob(p_single)[1]
 sol = solve(jump_prob, p.jump_algorithm, saveat = p.t)
 plot(sol, legend = false, title = "Particle Trajectories")
+```
+
+```julia
 ```

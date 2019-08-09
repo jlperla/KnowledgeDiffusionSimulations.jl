@@ -48,17 +48,17 @@ function generate_jump_prob(p)
     sde_prob = SDEProblem(p.drift, p.volatility, x_iv, (0.0, p.t[end]), p)
     jump = ConstantRateJump(rate, p.affect!)
     jump_prob = JumpProblem(sde_prob, Direct(), jump)
-    return jump_prob, sde_prob
+    return jump_prob
 end
 
 function generate_ensemble_prob(p)
-    prob = generate_jump_prob(p)[2];
+    prob = generate_jump_prob(p);
     function write_moments(sol, i) 
         resize!(sol.t, 0); resize!(sol.u, 0); append!(sol.t, sol.prob.p.t); append!(sol.u, sol.prob.p.moments)
         return (sol, false)
     end
     function calculate_moments(u, t, integrator) 
-        g = (length(integrator.p.moments) == 0 ? 0. : (mean(u) - integrator.p.moments[end][2])/step(integrator.p.t))
+        g = (length(integrator.p.moments) == 0. ? 0. : (mean(u) - integrator.p.moments[end][2])/step(integrator.p.t))
         moments = [minimum(u), mean(u), maximum(u), g]
         push!(integrator.p.moments, moments) 
     end
@@ -70,7 +70,9 @@ end
 p = params();
 ```
 
-### Solve Ensemble
+### Ensemble Aggregates
+
+Run several simulations, and track the mean of their moments over time.
 
 ```julia
 ensemble_prob, cb = generate_ensemble_prob(p)
@@ -85,11 +87,23 @@ p4 = plot(summ, idxs = [4], error_style = :none, title = "Growth")
 plot(p1, p2, p3, p4)
 ```
 
+### Ensemble Trajectories
+
+Run several ensembles, and track the means of the _n_th particle's position over time.
+
+```julia
+p = params(N = 4, trajectories = 10)
+ensemble_prob = EnsembleProblem(generate_jump_prob(p)) # no callback structure, since we care about positions and not moments
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, save_everystep = false)
+summ = EnsembleSummary(sim) # aggregates particle positions across simulations
+plot(summ, error_style = :bars)
+```
+
 ### Single Simulation
 
 ```julia
 p_single = params(N = 4)
-jump_prob = generate_jump_prob(p_single)[1]
+jump_prob = generate_jump_prob(p_single)
 sol = solve(jump_prob, p.jump_algorithm, saveat = p.t)
 plot(sol, legend = false, title = "Particle Trajectories")
 ```

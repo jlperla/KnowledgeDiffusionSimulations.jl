@@ -135,7 +135,7 @@ plot(p1, p2, p3, p4, p5, layout = l)
 ### No Variable Rate
 
 ```julia
-rate_index(u, p, t, i) = 2 # constant across indices, times, etc.
+rate_index(u, p, t, i) = 0.2 # constant across indices, times, etc.
 affect_index!(integrator, index) = (integrator.u[index] = max(integrator.u[index], integrator.u[rand(1:integrator.p.N)])) # original 
 
 p = params(g_print_lower = -500, g_print_upper = 1000)
@@ -214,14 +214,10 @@ end
 
 ```julia
 rate_index(u, p, t, i) = 0.2 # constant across indices, times, etc.
-function affect!(integrator, i)
-  n = rand(1:integrator.p.N)
-  n2 = rand(1:integrator.p.N)
-  integrator.u[n] = max(integrator.u[n], integrator.u[n2])
-end
+affect_index!(integrator, index) = (integrator.u[index] = max(integrator.u[index], integrator.u[rand(1:integrator.p.N)])) # original 
 
 p = params(g_print_lower = -Inf, g_print_upper = Inf)
-jump_prob = generate_jump_prob(p, rate_index, affect!)
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
 ensemble_prob, cb = generate_ensemble_prob(jump_prob)
 
 sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
@@ -234,4 +230,7 @@ p5 = plot(summ, idxs = [5], title = "Growth")
 l = @layout [a b; c d ; d]
 
 plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+```julia
 ```

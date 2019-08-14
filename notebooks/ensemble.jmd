@@ -40,7 +40,7 @@ params = @with_kw (
     rate = rate)
 ```
 
-### Generator Functions for Problem Objects
+#### Generator Functions for Problem Objects
 
 ```julia
 function generate_jump_prob(p)
@@ -58,8 +58,9 @@ function generate_ensemble_prob(p)
         return (sol, false)
     end
     function calculate_moments(u, t, integrator) 
+        # g computed w.r.t. mean
         g = (length(integrator.p.moments) == 0. ? 0. : (mean(u) - integrator.p.moments[end][2])/step(integrator.p.t))
-        moments = [minimum(u), mean(u), maximum(u), g]
+        moments = [minimum(u), mean(u), median(u), maximum(u), g]
         push!(integrator.p.moments, moments) 
     end
     cb = FunctionCallingCallback(calculate_moments; funcat=p.t, func_everystep=false, func_start = true, tdir=1);
@@ -79,12 +80,14 @@ ensemble_prob, cb = generate_ensemble_prob(p)
 sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
 summ = EnsembleSummary(sim)
 
-p1 = plot(summ, idxs = [1], error_style = :none, title = "Min")
-p2 = plot(summ, idxs = [2], error_style = :none, title = "Mean")
-p3 = plot(summ, idxs = [3], error_style = :none, title = "Max")
-p4 = plot(summ, idxs = [4], error_style = :none, title = "Growth")
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
 
-plot(p1, p2, p3, p4)
+plot(p1, p2, p3, p4, p5, layout = l)
 ```
 
 ### Ensemble Trajectories
@@ -96,7 +99,7 @@ p = params(N = 3, trajectories = 10)
 ensemble_prob = EnsembleProblem(generate_jump_prob(p)) # no callback structure, since we care about positions and not moments
 sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, save_everystep = false)
 summ = EnsembleSummary(sim) # aggregates particle positions across simulations
-plot(summ, error_style = :bars)
+plot(summ)
 ```
 
 ### Single Simulation
@@ -106,7 +109,4 @@ p_single = params(N = 3)
 jump_prob = generate_jump_prob(p_single)
 sol = solve(jump_prob, p.jump_algorithm, saveat = p.t)
 plot(sol, legend = false, title = "Particle Trajectories")
-```
-
-```julia
 ```

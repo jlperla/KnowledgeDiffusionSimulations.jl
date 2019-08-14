@@ -1,0 +1,237 @@
+
+```julia
+using DiffEqJump, StochasticDiffEq, DiffEqCallbacks
+using StatsBase, Parameters, Plots, Distributions
+```
+
+```julia
+# invariant parameters 
+function drift(du,u,p,t) # constant drift
+      du .= p.μ
+end
+function volatility(du,u,p,t) # constant shock exposure
+      du .= p.σ
+end
+
+# main params bundle
+params = @with_kw (
+    μ = 0.01, # mean
+    σ = 0.1, # drift
+    N = 30, # num particles (==== 30 instead of 10 ====)
+    β = 0.2, # rate parameter
+    t = 0.:0.01:30., # time steps to save (==== 30 instead of 10 ====)
+    moments = Array{Array{Float64, 1}, 1}(), # container for moments
+    α = 2.0, # shape parameter for the initial condition distribution
+    iv_dist = Exponential(1/α), # updates based on supplied α
+    trajectories = 2, # number of members for ensemble methods 
+    jump_algorithm = SRIW1(), # jump diffeq algorithm
+    drift = drift, 
+    volatility = volatility,
+    ρ_max = 2.0,
+    g_print_lower = -30, # print verbose statistics if g is lower than this
+    g_print_upper = 15) # print verbose statistics if g is higher than this
+```
+
+```julia
+# generator functions
+function generate_jump_prob(p, rate_index, affect_index!)
+    x_iv = rand(p.iv_dist, p.N) # draw initial condition
+    sde_prob = SDEProblem(p.drift, p.volatility, x_iv, (0.0, p.t[end]), p)
+    jumps = [VariableRateJump((u, p, t) -> rate_index(u, p, t, i), (integrator) -> affect_index!(integrator, i)) for i in 1:p.N];
+    jump_prob = JumpProblem(sde_prob, DirectFW(), JumpSet((jumps),(),nothing,nothing))
+    return jump_prob
+end
+
+function generate_ensemble_prob(jump_prob)
+    function write_moments(sol, i)
+        newsol = DiffEqBase.build_solution(sol.prob, sol.alg, sol.prob.p.t, sol.prob.p.moments)
+        return newsol, false
+    end
+    function calculate_moments(u, t, integrator) 
+        # g calculated w.r.t. mean
+        g = (length(integrator.p.moments) == 0. ? 0. : (mean(u) - integrator.p.moments[end][2])/step(integrator.p.t))
+        moments = [minimum(u), mean(u), median(u), maximum(u), g]
+        # verbose g logic
+        if g < integrator.p.g_print_lower || g > integrator.p.g_print_upper 
+            @show moments # current period moments
+            if length(integrator.p.moments) > 0 
+                @show integrator.p.moments[end] # last period moments (haven't pushed yet)
+            end
+        end
+        push!(integrator.p.moments, moments) 
+    end
+    cb = FunctionCallingCallback(calculate_moments; funcat=p.t, func_everystep=false, func_start = true, tdir=1);
+    ensemble_prob = EnsembleProblem(jump_prob, output_func = write_moments)    
+    return ensemble_prob, cb
+end
+```
+
+### Default (Broken) Output
+
+```julia
+function rate_index(u, p, t, index)
+   u_max = maximum(u)
+   u_min = minimum(u)
+   return p.ρ_max* ((u[index] - u_max)^2 / (u_max - u_min))
+end
+affect_index!(integrator, index) = (integrator.u[index] = max(integrator.u[index], integrator.u[rand(1:integrator.p.N)]))
+
+p = params()
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+### New Algorithm
+
+```julia
+p = params(jump_algorithm = SOSRI())
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+### No Affect
+
+```julia
+affect_index!(integrator, index) = nothing
+
+p = params(g_print_lower = -Inf, g_print_upper = Inf)
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+### No Variable Rate
+
+```julia
+rate_index(u, p, t, i) = 2 # constant across indices, times, etc.
+affect_index!(integrator, index) = (integrator.u[index] = max(integrator.u[index], integrator.u[rand(1:integrator.p.N)])) # original 
+
+p = params(g_print_lower = -500, g_print_upper = 1000)
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+### Neither Affect nor Variable Rate
+
+```julia
+rate_index(u, p, t, i) = 0.2 # constant across indices, times, etc.
+affect_index!(integrator, index) = nothing
+
+p = params(g_print_lower = -Inf, g_print_upper = Inf)
+jump_prob = generate_jump_prob(p, rate_index, affect_index!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```
+
+### ConstantRateJump Sanity Check
+
+```julia
+# generator functions
+function generate_jump_prob(p, rate_index, affect_index!)
+    x_iv = rand(p.iv_dist, p.N) # draw initial condition
+    sde_prob = SDEProblem(p.drift, p.volatility, x_iv, (0.0, p.t[end]), p)
+    jumps = [ConstantRateJump((u, p, t) -> rate_index(u, p, t, i), (integrator) -> affect_index!(integrator, i)) for i in 1:p.N];
+    jump_prob = JumpProblem(sde_prob, DirectFW(), JumpSet((), jumps, nothing, nothing))
+    return jump_prob
+end
+
+function generate_ensemble_prob(jump_prob)
+    function write_moments(sol, i)
+        newsol = DiffEqBase.build_solution(sol.prob, sol.alg, sol.prob.p.t, sol.prob.p.moments)
+        return newsol, false
+    end
+    function calculate_moments(u, t, integrator) 
+        # g calculated w.r.t. mean
+        g = (length(integrator.p.moments) == 0. ? 0. : (mean(u) - integrator.p.moments[end][2])/step(integrator.p.t))
+        moments = [minimum(u), mean(u), median(u), maximum(u), g]
+        # verbose g logic
+        if g < integrator.p.g_print_lower || g > integrator.p.g_print_upper 
+            @show moments # current period moments
+            if length(integrator.p.moments) > 0 
+                @show integrator.p.moments[end] # last period moments (haven't pushed yet)
+            end
+        end
+        push!(integrator.p.moments, moments) 
+    end
+    cb = FunctionCallingCallback(calculate_moments; funcat=p.t, func_everystep=false, func_start = true, tdir=1);
+    ensemble_prob = EnsembleProblem(jump_prob, output_func = write_moments)    
+    return ensemble_prob, cb
+end
+```
+
+```julia
+rate_index(u, p, t, i) = 0.2 # constant across indices, times, etc.
+function affect!(integrator, i)
+  n = rand(1:integrator.p.N)
+  n2 = rand(1:integrator.p.N)
+  integrator.u[n] = max(integrator.u[n], integrator.u[n2])
+end
+
+p = params(g_print_lower = -Inf, g_print_upper = Inf)
+jump_prob = generate_jump_prob(p, rate_index, affect!)
+ensemble_prob, cb = generate_ensemble_prob(jump_prob)
+
+sim = solve(ensemble_prob, p.jump_algorithm, EnsembleDistributed(), trajectories = p.trajectories, callback = cb, save_everystep = false)
+summ = EnsembleSummary(sim)
+p1 = plot(summ, idxs = [1], title = "Min")
+p2 = plot(summ, idxs = [2], title = "Mean")
+p3 = plot(summ, idxs = [3], title = "Median")
+p4 = plot(summ, idxs = [4], title = "Max")
+p5 = plot(summ, idxs = [5], title = "Growth")
+l = @layout [a b; c d ; d]
+
+plot(p1, p2, p3, p4, p5, layout = l)
+```

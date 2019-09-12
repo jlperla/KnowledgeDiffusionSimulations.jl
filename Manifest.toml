@@ -156,9 +156,9 @@ version = "2.2.0"
 
 [[DiffEqJump]]
 deps = ["Compat", "DataStructures", "DiffEqBase", "FunctionWrappers", "LinearAlgebra", "Parameters", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "TreeViews"]
-git-tree-sha1 = "47b3924d75f8f3e93ccc4e0b6350f929952fd79b"
+git-tree-sha1 = "5bb8dcc425450e144438c1590c0aab6a104613c8"
 uuid = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
-version = "6.2.1"
+version = "6.2.0"
 
 [[DiffEqNoiseProcess]]
 deps = ["DataStructures", "DiffEqBase", "LinearAlgebra", "Random", "RandomNumbers", "RecipesBase", "RecursiveArrayTools", "Requires", "ResettableStacks", "StaticArrays", "Statistics"]

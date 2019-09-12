@@ -1,0 +1,135 @@
+% !TEX program = pdflatex
+
+\documentclass[11pt]{article}
+\usepackage{amsmath,amsfonts,amsthm,amssymb,geometry,dsfont}
+\usepackage[usenames,dvipsnames,svgnamesable]{xcolor}
+\usepackage[capitalise,noabbrev]{cleveref} %
+%\usepackage{natbib,url}
+\crefname{equation}{}{} %
+\crefname{assumption}{Assumption}{Assumptions}
+\crefname{property}{Property}{Properties}
+\geometry{left=1in,right=1in,top=0.6in,bottom=1in}
+\newcommand{\set}[1]{\ensuremath{\left\{{#1}\right\}}}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\diff}{\ensuremath{\mathrm{diff}}}
+\newcommand{\band}{\ensuremath{\mathrm{band}}}
+\newcommand{\toep}{\ensuremath{\mathrm{toep}}}
+\newcommand{\tridiag}{\ensuremath{\mathrm{tridiag}}}
+\newcommand{\diag}{\ensuremath{\mathrm{diag}}}
+\newcommand{\D}[1][]{\ensuremath{\partial_{#1}}}
+\newcommand{\indicator}[1]{\ensuremath{\mathds{1}\left\{{#1}\right\}}}
+\newcommand{\condexpec}[3][]{\ensuremath{\mathbb{E}_{#1}\left[{#2} \; \middle| \; {#3} \right]}}
+\newcommand{\expec}[2][]{\ensuremath{\mathbb{E}_{{#1}}\left[ {#2} \right]}}
+\geometry{left=1in,right=1in,top=0.6in,bottom=1in}
+\newenvironment{psmallmatrix}
+{\left(\begin{smallmatrix}}
+	{\end{smallmatrix}\right)}
+
+\theoremstyle{definition}
+\newtheorem{example}{Examples}[section]
+
+\bibliographystyle{ecta}
+\begin{document}
+\title{Notes on Discrete Simulations}
+\author{Jess Benhabib, Jesse Perla, and Christopher Tonetti}
+\maketitle
+
+\section{Overview}
+This package is 
+
+\subsection{Linear Differential Equations}
+
+
+Staley, Luttmer formulation, in log productivity,%
+\[
+\partial _{t}G\left( z,t\right) =\frac{\sigma ^{2}}{2}\partial
+_{z}^{2}G\left( z,t\right) -\mu \partial _{z}G\left( z,t\right) -\alpha
+G\left( z,t\right) \left( 1-G\left( z,t\right) \right) 
+\]%
+\[
+G\left( t,-\infty \right) =0,\ \ G\left( t,+\infty \right) =1,\ \ \ G\left(
+0,z\right) =G_{0} 
+\]
+
+Transform variables%
+\[
+\tilde{t}=\alpha t,\ \ \tilde{z}=\frac{\left( 2\alpha \right) ^{.5}}{\sigma }%
+\left( z-\mu t\right) ,\ \ H\left( t,z\right) =1-G(t,z)
+\]%
+we get KPP:%
+\begin{equation}
+\partial _{t}H\left( t,z\right) =\partial _{z}^{2}H\left( t,z\right)
++H\left( t,z\right) \left( 1-H\left( t,z\right) \right)   \label{H}
+\end{equation}%
+with solution that depends on initial conditions given by $H\left(
+0,z\right) $, and $v$ is th speed of the travelling wave solution to (\ref{H}%
+).%
+\[
+H\left( t,z\right) =W_{v}\left( z-vt\right) 
+\]%
+For a solution we get a travelling wave, 
+\[
+\lim_{x\rightarrow \infty }W_{v}\left( x\right) \sim e^{-\gamma x}
+\]%
+where $\gamma $ is the smallest $\gamma $ that solves $v=\gamma +\gamma
+^{-1}.$
+
+If initial $H\left( 0,z\right) $ is Dirac or a compact perturbation of a
+step function, then $v=2$, $\gamma =1,$ and there is a unique travelling
+wave function.
+
+If $H\left( 0,z\right) \sim e^{-\gamma x},\ 0<\gamma <1,\ $\ then $\gamma $
+solves $v=\gamma +\gamma ^{-1}$ $>2$ as above. ALSO: From Murray,
+Mathematical Biology, 1993, Springer, page 280, eq. (11.19): if $\gamma \geq
+1,\ $for $H\left( 0,z\right) \sim e^{-\gamma x},$ then $v=2.$
+
+Recovering the untransformed system: 
+
+To reverse the transformation to get back to $G\left( t,z\right) $, we have: 
+\begin{eqnarray}
+\ G\left( t,z\right)  &=&1-H(\alpha t,\frac{\left( 2\alpha \right) ^{.5}}{%
+\sigma }\left( z-\mu t\right) )\sim e^{-\gamma \tilde{z}}  \label{G1} \\
+&=&e^{-\gamma \left( \frac{\left( 2\alpha \right) ^{.5}}{\sigma }\left(
+z-\mu t\right) -v\alpha t\right) }=e^{-\gamma \frac{2\alpha }{\sigma }\left(
+\left( z-\mu t\right) -v\frac{\sigma }{\left( 2\alpha \right) ^{.5}}\alpha
+t\right) }=e^{-\gamma \frac{2\alpha }{\sigma }\left( z-\left( \mu +v\left( 
+\frac{\alpha }{2}\right) ^{.5}\sigma \right) t\right) }  \label{G2} \\
+&=&e^{-\gamma \frac{2\alpha }{\sigma }\left( z-\left( \mu +\left( \gamma +%
+\frac{1}{\gamma }\right) \left( \frac{\alpha }{2}\right) ^{.5}\sigma \right)
+t\right) }  \label{G3}
+\end{eqnarray}%
+for $z>\left( \mu +v\left( \frac{\alpha }{2}\right) ^{.5}\sigma \right) t$ $%
+\ $\ along the travelling wave.Thus wave speed  for the original system $%
+G\left( t,z\right) $ is $\left( \mu +\left( \gamma +\frac{1}{\gamma }\right)
+\left( \frac{\alpha }{2}\right) ^{.5}\sigma \right) $ and the exponential
+decay rate for log productivity is $\left( \gamma \frac{2\alpha }{\sigma }%
+\right) ,$  unless $v=2$ and $\gamma =1$ because $H\left( 0,z\right) \sim
+e^{-\gamma x}$ with $\gamma \geq 1,$ and then wave speed is $v=2$ so that $%
+\left( \mu +2\left( \frac{\alpha }{2}\right) ^{.5}\sigma \right) =\mu
++\left( 2a\right) ^{.5}\sigma $ along the travelling wave for $z>\left( \mu
++\left( 2a\right) ^{.5}\sigma \right) t,$ and the decay rate of log
+productivity distribution is $e^{-\frac{2\alpha }{\sigma }.}$
+
+Note these cdf's for $G\left( t,z\right) $ are in log productivity: $log\
+\left( z\right) \sim e^{-\gamma \frac{2\alpha }{\sigma }z},\ x\sim e^{\log
+\left( z^{-\gamma \frac{2\alpha }{\sigma }}\right) }\sim z^{-\gamma \frac{%
+2\alpha }{\sigma }}.$ For the pareto to have a mean we need $-\gamma \frac{%
+2\alpha }{\sigma }.$
+
+Mildred, in her SSRN paper had used the relations from above found in
+McKean, Brunet-Derrida, Bramson, Murray and others, to study whether the
+drop in recent growth is compatible with decreasing diffusion $\sigma ,$
+which also decreases inequality as given by the tail index  $\frac{\gamma
+\left( 2\alpha \right) ^{.5}}{\sigma },$ an inverse measure of inequality.
+The tail index  however decreases with $\alpha $, compatible with decreasing
+imitation  and rising inequality. One can argue therefore that decreasing $%
+\alpha $ reflects increasing industry concentration, fostering inequality.
+In Jones and Kim however higher growth  due to more leapfrogging and
+inventions also generates  higher inequality, while we have recently
+observed decreasing growth and higher inequality. Playing with both $\alpha $
+and $\sigma $, Mildred could get both an increase in inequality and lower
+growth, as in equation (\ref{G3}) above.
+
+
+%\bibliography{simulation_notes}
+\end{document}
